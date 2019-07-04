@@ -28,7 +28,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class BayesianRBFRegression:
 
-    def fit(self, X, y, beta):
+    def fit(self, X, y):
         """
         train model
         :param X:
@@ -45,7 +45,7 @@ class BayesianRBFRegression:
             cov = η ** 2 * pm.gp.cov.Matern52(X.shape[1], ℓ)
             self.gp = pm.gp.Marginal(cov_func=cov)
 
-            σ = pm.HalfCauchy("σ", beta=beta) # 5, 0.5, 2
+            σ = pm.HalfCauchy("σ", beta=0.1) # 5, 0.5, 2
             y_ = self.gp.marginal_likelihood("y", X=X, y=y, noise=σ)
 
             self.map_trace = [pm.find_MAP()]
@@ -208,7 +208,7 @@ def read_csv(path, scaler,exp):
         return X, y, _seed
 
 
-def eval_bayesian_rbf(X, y, eval_X, eval_y,beta):
+def eval_bayesian_rbf(X, y, eval_X, eval_y):
     """
     evaluate linear regression model
     :param X:
@@ -218,23 +218,18 @@ def eval_bayesian_rbf(X, y, eval_X, eval_y,beta):
     :return: predict_y, error, mse, mape
     """
     lr = BayesianRBFRegression()
-    lr.fit(X, y,beta)
+    lr.fit(X, y)
     pred_y, error = lr.predict(eval_X, True)
 
     return pred_y, error, np.sqrt(mean_squared_error(eval_y, pred_y)), mean_absolute_percentage_error(eval_y, pred_y)
 
 
-def runBayesian(name,exp,beta):
+def runBayesian(name,exp,file_path):
     rmse_list = []
     mae_list = []
     mape_list = []
     predictions = []
     errorlist = []
-
-    # file_path = "Datasets/APIM_Dataset.csv"
-    file_path = "Datasets/Ballerina_Dataset.csv"
-    # file_path = "Datasets/Springboot_Dataset.csv"
-    # file_path = "Datasets/tpcw.csv"
 
     scaler = MinMaxScaler(feature_range=(0, 1))
 
@@ -248,11 +243,10 @@ def runBayesian(name,exp,beta):
     kf = KFold(n_splits=10, random_state=seed, shuffle=False)
     for train_index, test_index in kf.split(_X):
         pred_bayes, error, rmse_bayes, mape_bayes = eval_bayesian_rbf(np.copy(_X[train_index]), np.copy(_y[train_index]),
-                                                                     np.copy(_X[test_index]),  np.copy(_y[test_index]),beta)
+                                                                     np.copy(_X[test_index]),  np.copy(_y[test_index]))
 
         mae_bayes = mean_absolute_error(pred_bayes, _y[test_index])
 
-        # errorlist.append(error)
         rmse_list.append(rmse_bayes)
         mae_list.append(mae_bayes)
         mape_list.append(mape_bayes)
@@ -264,70 +258,20 @@ def runBayesian(name,exp,beta):
             errorlist.append(item)
 
     print("Bayesian RMSE : %f and MAPE :%f and MAE :%f" % (np.mean(rmse_list), np.mean(mape_list), np.mean(mae_list)))
-    # formatPred = np.asarray(predictions).flatten()
-    # allErrors = np.asarray(errorlist).flatten()
     RMSE = np.mean(rmse_list)
     MAE = np.mean(mae_list)
     MAPE = np.mean(mape_list)
-    plotName = name+"_"+exp+".png"
 
-    # fileName = "datafiles/" + name + ".csv"
-    # with open(fileName, "a") as f:
-    #     writer = csv.writer(f)
-    #     writer.writerows(zip(_y, predictions))
-
-    fileName = "bal_avg_" + name + ".csv"
+    fileName = "datafiles/" + name + ".csv"
     with open(fileName, "a") as f:
         writer = csv.writer(f)
-        writer.writerows(zip(_y, predictions))
+        writer.writerows(zip(_y, predictions,errorlist))
 
-    with open("results_bal_avg.csv", "a") as f:
+    with open("results.csv", "a") as f:
         writer = csv.writer(f)
         writer.writerows(zip([name], [RMSE], [MAE], [MAPE]))
 
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-    #
-    # ax.scatter(_X.T[1], _X.T[3], _y, color='blue', label="true", alpha=0.7, lw=2, marker="o", )
-    # ax.scatter(_X.T[1], _X.T[3], _y, c='g', label="train_y", alpha=0.7, marker="*", lw=1)
-    # ax.scatter(_X.T[1], _X.T[3], formatPred, label='bayesian', c='red', alpha=0.7, marker="X", lw=3)
-    #
-    # for i in range(len(allErrors)):
-    #     ax.plot([_X.T[1][i], _X.T[1][i]], [_X.T[3][i], _X.T[3][i]],
-    #             [formatPred[i] - allErrors[i] * 1000, formatPred[i] + allErrors[i] * 1000], c='red', alpha=0.7)
-    #
-    # ax.set_ylabel("Message Size (Bytes)", labelpad=23)
-    # ax.set_xlabel("Concurrent Users", labelpad=23)
-    # ax.set_zlabel('Average Latency (ms)', labelpad=23)
-    # # ax.set_zlabel('Throughput', labelpad=23)
-    # ax.legend(loc="upper right", labelpad=23)
-    #
-    # plt.show()
-
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-    # ax.scatter(concurrentUsers, messageSize, formatPred, c='b', marker='o')
-    # ax.errorbar(_y, formatPred, yerr=allErrors * 1000, fmt='o', label='bayesian', c='y', alpha=0.5, marker="o")
-    # ax.set_xlabel('Concurrent Users')
-    # ax.set_ylabel('Message Size (Bytes)')
-    # ax.set_zlabel('Average Latency (ms)')
-    # ax.legend(loc=0)
-    # plt.savefig(plotName, format='png', transparent=False)
-    # plt.show()
-    # plt.close()
-
-    # ax.plot(_y, _y, ls="--", color='black', label="true", alpha=0.7, lw=1)
-    # ax.errorbar(_y, formatPred, yerr=allErrors * 1000, fmt='o', label='bayesian', c='y', alpha=0.5, marker="o")
-    # ax.scatter(_y, messageSize, c='g', label="Message Size", alpha=1, marker="*", lw=3)
-    # ax.scatter(_y, concurrentUsers, c='r', label="Concurrent Users", alpha=1, marker="+")
-    # ax.set_ylabel("train_y")
-    # ax.set_xlabel("true")
-    # ax.legend(loc=0)
-    # plt.savefig(plotName, format='png', transparent=False)
-    # plt.show()
-
     return predictions
 
-h=runBayesian("average_bayesPred", "avg", 0.1)
 
 
