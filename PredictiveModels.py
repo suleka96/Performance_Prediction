@@ -325,7 +325,7 @@ if __name__ == '__main__':
     rfr_pred=rfr_model("average_rfr_pred",X, y_avg)
     xgb_pred=xgb_model("average_xgb_pred",X, y_avg)
     import BayesianModel
-    bayesPred = BayesianModel.runBayesian("average_bayesPred","avg",0.03)
+    bayesPred = BayesianModel.runBayesian("average_bayesPred","avg",0.03,file_path)
     graph("avg.png",y_avg, "y_avg", linear_pred, poly_pred, rbf_pred, rfr_pred, xgb_pred,bayesPred)
     # graph("avg.png",y_avg, "y_avg", xgb_pred)
 
@@ -335,7 +335,7 @@ if __name__ == '__main__':
     rbf_pred=svr_rbf_kernel("throughput_rbf_pred",X, y_throughput)
     rfr_pred=rfr_model("throughput_rfr_pred",X, y_throughput)
     xgb_pred=xgb_model("throughput_xgb_pred",X, y_throughput)
-    bayesPred = BayesianModel.runBayesian("throughput_bayesPred","tgp",0.1)
+    bayesPred = BayesianModel.runBayesian("throughput_bayesPred","tgp",0.1,file_path)
     graph("tgp.png",y_throughput, "y_tgp", linear_pred, poly_pred, rbf_pred, rfr_pred, xgb_pred,bayesPred)
     # graph("tgp.png",y_throughput, "y_tgp",xgb_pred)
 
